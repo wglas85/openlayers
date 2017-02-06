@@ -1,13 +1,14 @@
 goog.provide('ol.webgl.Shader');
 
+goog.require('ol');
 goog.require('ol.functions');
-goog.require('ol.webgl');
 
 
 if (ol.ENABLE_WEBGL) {
 
   /**
    * @constructor
+   * @abstract
    * @param {string} source Source.
    * @struct
    */
