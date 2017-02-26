@@ -3,6 +3,7 @@ goog.provide('ol.render.canvas.ImageReplay');
 goog.require('ol');
 goog.require('ol.render.canvas.Instruction');
 goog.require('ol.render.canvas.Replay');
+goog.require('ol.style.Shape');
 
 
 /**
@@ -19,13 +20,13 @@ ol.render.canvas.ImageReplay = function(tolerance, maxExtent, resolution, overla
 
   /**
    * @private
-   * @type {HTMLCanvasElement|HTMLVideoElement|Image}
+   * @type {HTMLCanvasElement|HTMLVideoElement|Image|function(CanvasRenderingContext2D, ol.Extent)}
    */
   this.hitDetectionImage_ = null;
 
   /**
    * @private
-   * @type {HTMLCanvasElement|HTMLVideoElement|Image}
+   * @type {HTMLCanvasElement|HTMLVideoElement|Image|function(CanvasRenderingContext2D, ol.Extent)}
    */
   this.image_ = null;
 
@@ -94,7 +95,6 @@ ol.render.canvas.ImageReplay = function(tolerance, maxExtent, resolution, overla
    * @type {number|undefined}
    */
   this.width_ = undefined;
-
 };
 ol.inherits(ol.render.canvas.ImageReplay, ol.render.canvas.Replay);
 
@@ -125,7 +125,7 @@ ol.render.canvas.ImageReplay.prototype.drawPoint = function(pointGeometry, featu
   var stride = pointGeometry.getStride();
   var myBegin = this.coordinates.length;
   var myEnd = this.drawCoordinates_(
-        flatCoordinates, 0, flatCoordinates.length, stride);
+    flatCoordinates, 0, flatCoordinates.length, stride);
   this.instructions.push([
     ol.render.canvas.Instruction.DRAW_IMAGE, myBegin, myEnd, this.image_,
       // Remaining arguments to DRAW_IMAGE are in alphabetical order
@@ -158,21 +158,17 @@ ol.render.canvas.ImageReplay.prototype.drawMultiPoint = function(multiPointGeome
   var myBegin = this.coordinates.length;
   var myEnd = this.drawCoordinates_(
         flatCoordinates, 0, flatCoordinates.length, stride);
-  this.instructions.push([
+
+  var instruction = [
     ol.render.canvas.Instruction.DRAW_IMAGE, myBegin, myEnd, this.image_,
       // Remaining arguments to DRAW_IMAGE are in alphabetical order
     this.anchorX_, this.anchorY_, this.height_, this.opacity_,
     this.originX_, this.originY_, this.rotateWithView_, this.rotation_,
     this.scale_, this.snapToPixel_, this.width_
-  ]);
-  this.hitDetectionInstructions.push([
-    ol.render.canvas.Instruction.DRAW_IMAGE, myBegin, myEnd,
-    this.hitDetectionImage_,
-      // Remaining arguments to DRAW_IMAGE are in alphabetical order
-    this.anchorX_, this.anchorY_, this.height_, this.opacity_,
-    this.originX_, this.originY_, this.rotateWithView_, this.rotation_,
-    this.scale_, this.snapToPixel_, this.width_
-  ]);
+  ];
+
+  this.instructions.push(instruction);
+  this.hitDetectionInstructions.push(instruction);
   this.endGeometry(multiPointGeometry, feature);
 };
 
@@ -203,22 +199,44 @@ ol.render.canvas.ImageReplay.prototype.finish = function() {
  * @inheritDoc
  */
 ol.render.canvas.ImageReplay.prototype.setImageStyle = function(imageStyle) {
-  var anchor = imageStyle.getAnchor();
-  var size = imageStyle.getSize();
-  var hitDetectionImage = imageStyle.getHitDetectionImage(1);
-  var image = imageStyle.getImage(1);
-  var origin = imageStyle.getOrigin();
-  this.anchorX_ = anchor[0];
-  this.anchorY_ = anchor[1];
-  this.hitDetectionImage_ = hitDetectionImage;
-  this.image_ = image;
-  this.height_ = size[1];
-  this.opacity_ = imageStyle.getOpacity();
-  this.originX_ = origin[0];
-  this.originY_ = origin[1];
-  this.rotateWithView_ = imageStyle.getRotateWithView();
-  this.rotation_ = imageStyle.getRotation();
-  this.scale_ = imageStyle.getScale();
-  this.snapToPixel_ = imageStyle.getSnapToPixel();
-  this.width_ = size[0];
+
+  if (imageStyle instanceof ol.style.Shape) {
+
+    var shapeStyle = /** @type {ol.style.Shape} */ (imageStyle);
+    var canvasAnchor = shapeStyle.getCanvasAnchor();
+    var extent = shapeStyle.getExtent();
+    var renderFunction = shapeStyle.render.bind(shapeStyle);
+    this.anchorX_ = canvasAnchor[0];
+    this.anchorY_ = canvasAnchor[1];
+    this.hitDetectionImage_ = renderFunction;
+    this.image_ = renderFunction;
+    this.height_ = extent[3];
+    this.opacity_ = shapeStyle.getOpacity();
+    this.originX_ = extent[0];
+    this.originY_ = extent[1];
+    this.rotateWithView_ = shapeStyle.getRotateWithView();
+    this.rotation_ = shapeStyle.getRotation();
+    this.scale_ = shapeStyle.getScale();
+    this.snapToPixel_ = shapeStyle.getSnapToPixel();
+    this.width_ = extent[2];
+  } else {
+    var anchor = imageStyle.getAnchor();
+    var size = imageStyle.getSize();
+    var hitDetectionImage = imageStyle.getHitDetectionImage(1);
+    var image = imageStyle.getImage(1);
+    var origin = imageStyle.getOrigin();
+    this.anchorX_ = anchor[0];
+    this.anchorY_ = anchor[1];
+    this.hitDetectionImage_ = hitDetectionImage;
+    this.image_ = image;
+    this.height_ = size[1];
+    this.opacity_ = imageStyle.getOpacity();
+    this.originX_ = origin[0];
+    this.originY_ = origin[1];
+    this.rotateWithView_ = imageStyle.getRotateWithView();
+    this.rotation_ = imageStyle.getRotation();
+    this.scale_ = imageStyle.getScale();
+    this.snapToPixel_ = imageStyle.getSnapToPixel();
+    this.width_ = size[0];
+  }
 };

@@ -36,7 +36,7 @@ ol.render.toContext = function(context, opt_options) {
     canvas.style.width = size[0] + 'px';
     canvas.style.height = size[1] + 'px';
   }
-  var extent = [0, 0, canvas.width, canvas.height];
+  var extent = options.extent ? options.extent : [0, 0, canvas.width, canvas.height];
   var transform = ol.transform.scale(ol.transform.create(), pixelRatio, pixelRatio);
   return new ol.render.canvas.Immediate(context, pixelRatio, extent, transform,
       0);

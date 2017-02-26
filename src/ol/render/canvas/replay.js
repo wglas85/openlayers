@@ -7,6 +7,7 @@ goog.require('ol.extent.Relationship');
 goog.require('ol.geom.flat.transform');
 goog.require('ol.has');
 goog.require('ol.obj');
+goog.require('ol.render');
 goog.require('ol.render.VectorContext');
 goog.require('ol.render.canvas.Instruction');
 goog.require('ol.transform');
@@ -306,8 +307,10 @@ ol.render.canvas.Replay.prototype.replay_ = function(
       case ol.render.canvas.Instruction.DRAW_IMAGE:
         d = /** @type {number} */ (instruction[1]);
         dd = /** @type {number} */ (instruction[2]);
-        var image =  /** @type {HTMLCanvasElement|HTMLVideoElement|Image} */
+        var image =  /** @type {HTMLCanvasElement|HTMLVideoElement|Image|function(CanvasRenderingContext2D, ol.Extent)} */
             (instruction[3]);
+        var isShape = typeof image === 'function';
+
         // Remaining arguments in DRAW_IMAGE are in alphabetical order
         var anchorX = /** @type {number} */ (instruction[4]) * pixelRatio;
         var anchorY = /** @type {number} */ (instruction[5]) * pixelRatio;
@@ -330,28 +333,37 @@ ol.render.canvas.Replay.prototype.replay_ = function(
             x = Math.round(x);
             y = Math.round(y);
           }
-          if (scale != 1 || rotation !== 0) {
+          if (scale != 1 || rotation !== 0 || isShape) {
             var centerX = x + anchorX;
             var centerY = y + anchorY;
             ol.transform.compose(localTransform,
-                centerX, centerY, scale, scale, rotation, -centerX, -centerY);
+                centerX, centerY, scale, scale, rotation, -anchorX, -anchorY);
             context.setTransform.apply(context, localTransform);
+            x = originX;
+            y = originY;
           }
           var alpha = context.globalAlpha;
           if (opacity != 1) {
             context.globalAlpha = alpha * opacity;
           }
 
-          var w = (width + originX > image.width) ? image.width - originX : width;
-          var h = (height + originY > image.height) ? image.height - originY : height;
+          if (isShape) {
 
-          context.drawImage(image, originX, originY, w, h,
-              x, y, w * pixelRatio, h * pixelRatio);
+            var renderFunction = /** @type {function(CanvasRenderingContext2D, ol.Extent)} */ (image);
+            renderFunction(context, [originX, originY, width, height]);
+
+          } else {
+            var w = (width + originX > image.width) ? image.width - originX : width;
+            var h = (height + originY > image.height) ? image.height - originY : height;
+
+            context.drawImage(/** @type {HTMLCanvasElement|HTMLVideoElement|Image} */ (image), originX, originY, w, h,
+                x, y, w * pixelRatio, h * pixelRatio);
+          }
 
           if (opacity != 1) {
             context.globalAlpha = alpha;
           }
-          if (scale != 1 || rotation !== 0) {
+          if (scale != 1 || rotation !== 0 || isShape) {
             context.setTransform.apply(context, resetTransform);
           }
         }
