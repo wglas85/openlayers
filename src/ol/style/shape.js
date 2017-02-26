@@ -8,6 +8,7 @@ goog.require('ol.style.Image');
  * Set shape icon style for shape features.
  *
  * @constructor
+ * @abstract
  * @param {olx.style.ShapeOptions=} opt_options Options.
  * @extends {ol.style.Image}
  * @api
@@ -17,39 +18,10 @@ ol.style.Shape = function(opt_options) {
   var options = opt_options || {};
 
   /**
-   * @type {ol.geom.Geometry}
-   */
-  this.geometry_ = options.geometry !== undefined ? options.geometry : null;
-
-  /**
-   * @private
-   * @type {ol.Size}
-   */
-  this.size_ = options.size !== undefined ? options.size : [10, 10];
-
-  /**
    * @private
    * @type {Array.<number>}
    */
-  this.anchor_ = options.anchor !== undefined ? options.anchor : [0, 0];
-
-  /**
-   * @private
-   * @type {Array.<number>}
-   */
-  this.origin_ = options.origin !== undefined ? options.origin : [-10, -10];
-
-  /**
-   * @private
-   * @type {ol.style.Fill}
-   */
-  this.fill_ = options.fill !== undefined ? options.fill : null;
-
-  /**
-   * @private
-   * @type {ol.style.Stroke}
-   */
-  this.stroke_ = options.stroke !== undefined ? options.stroke : null;
+  this.canvasAnchor_ = options.canvasAnchor !== undefined ? options.canvasAnchor : [0, 0];
 
   /**
    * @type {boolean}
@@ -81,95 +53,111 @@ ol.style.Shape = function(opt_options) {
     rotateWithView: rotateWithView
   });
 
+  /**
+   * @private
+   * @type {?HTMLCanvasElement}
+   */
+  this.image_ = null;
+
+  /**
+   * @private
+   * @type {?Array.<number>}
+   */
+  this.anchor_ = null;
 };
 ol.inherits(ol.style.Shape, ol.style.Image);
 
 
 /**
- * Clones the shape style.
- * @return {ol.style.Shape} The cloned shape style.
+ * Get the extent of the smybol's canvas coordinates.
+ * @abstract
+ * @return {ol.Extent} Extent.
  * @api
  */
-ol.style.Shape.prototype.clone = function() {
+ol.style.Shape.prototype.getExtent = function() {};
 
-  var newGeometry = this.geometry_ ? this.geometry_.clone() : null;
-  var newAnchor = this.anchor_ ? this.anchor_.slice() : null;
-  var newOrigin = this.origin_ ? this.origin_.slice() : null;
-  var newSize = this.size_ ? this.size_.slice() : null;
-  var newFill = this.fill_ ? this.fill_.clone() : null;
-  var newStroke = this.stroke_ ? this.stroke_.clone() : null;
 
-  return new ol.style.Shape({
-    rotateWithView: this.rotateWithView_,
-    rotation: this.rotation_,
-    scale: this.scale_,
-    geometry: newGeometry,
-    fill: newFill,
-    stroke: newStroke,
-    anchor: newAnchor,
-    origin: newOrigin,
-    size: newSize
-  });
+/**
+ * Render the shape to the given canvas context.
+ * @abstract
+ * @param {CanvasRenderingContext2D} context The canvas 2D context.
+ * @param {ol.Extent} extent Extent.
+ * @api
+ */
+ol.style.Shape.prototype.render = function(context, extent) {};
+
+
+/**
+ * Invalidate the internally cached image state upon changs to the style.
+ * @protected
+ */
+ol.style.Shape.prototype.changed = function() {
+  this.image_ = null;
+  this.anchor_ = null;
 };
 
 
 /**
- * Get the shape symbols's geometry.
- * @return {ol.geom.Geometry} Geometry.
- * @api
- */
-ol.style.Shape.prototype.getGeometry = function() {
-  return this.geometry_;
-};
-
-
-/**
- * Set the shape symbols's geometry.
+ * Set the shape's anchor in canvas coordinates.
  *
- * @param {ol.geom.Geometry} geometry Geometry.
+ * @param {Array.<number>} canvasAnchor The anchor point.
  * @api
  */
-ol.style.Shape.prototype.setGeometry = function(geometry) {
-  this.geometry_ = geometry;
+ol.style.Shape.prototype.setCanvasAnchor = function(canvasAnchor) {
+  this.canvasAnchor_ = canvasAnchor;
+  this.changed();
 };
 
 
 /**
- * Get the stroke style for the shape.
- * @return {ol.style.Stroke} Stroke style.
- * @api
- */
-ol.style.Shape.prototype.getStroke = function() {
-  return this.stroke_;
-};
-
-
-/**
- * Get the fill style for the shape.
- * @return {ol.style.Fill} Fill style.
- * @api
- */
-ol.style.Shape.prototype.getFill = function() {
-  return this.fill_;
-};
-
-
-/**
- * Set the shape's anchor.
+ * Get the shape's anchor in canvas coordinates.
  *
- * @param {Array.<number>} anchor The anchor point.
+ * @return {Array.<number>} The canvas anchor point.
  * @api
  */
-ol.style.Shape.prototype.setAnchor = function(anchor) {
-  this.anchor_ = anchor;
+ol.style.Shape.prototype.getCanvasAnchor = function() {
+  return this.canvasAnchor_;
 };
 
+/**
+ * Actually render the shape in a deferred manner, if requested by the renderer.
+ *
+ * @private
+ */
+ol.style.Shape.prototype.renderImage_ = function() {
+
+  var extent = this.getExtent();
+
+  var minx = Math.floor(extent[0]);
+  var miny = Math.floor(extent[1]);
+  var maxx = Math.ceil(extent[2]);
+  var maxy = Math.ceil(extent[3]);
+
+  var canvas =
+      /** @type {HTMLCanvasElement} */ (document.createElement('canvas'));
+
+  canvas.width = maxx - minx;
+  canvas.height = maxy - miny;
+
+  var context = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+
+  context.translate(-minx, -miny);
+
+  this.render(context, extent);
+
+  this.image_ = canvas;
+  this.anchor_ = [this.canvasAnchor_[0] - minx, this.canvasAnchor_[1] - miny];
+};
 
 /**
  * @inheritDoc
  * @api
  */
 ol.style.Shape.prototype.getAnchor = function() {
+
+  if (!this.anchor_) {
+    this.renderImage_();
+  }
   return this.anchor_;
 };
 
@@ -179,7 +167,11 @@ ol.style.Shape.prototype.getAnchor = function() {
  * @api
  */
 ol.style.Shape.prototype.getImage = function(pixelRatio) {
-  return this.getGeometry();
+
+  if (!this.image_) {
+    this.renderImage_();
+  }
+  return this.image_;
 };
 
 
@@ -188,7 +180,7 @@ ol.style.Shape.prototype.getImage = function(pixelRatio) {
  * @api
  */
 ol.style.Shape.prototype.getHitDetectionImage = function(pixelRatio) {
-  return this.getGeometry();
+  return this.getImage(pixelRatio);
 };
 
 
@@ -220,41 +212,24 @@ ol.style.Shape.prototype.getHitDetectionImageSize = function() {
 
 
 /**
- * Set the shape's origin aka the upper-left corner of the shape's coordinates.
- *
- * @param {Array.<number>} origin The upper-left corner of the shape's coordinates.
+ * @inheritDoc
  * @api
- */
-ol.style.Shape.prototype.setOrigin = function(origin) {
-  this.origin_ = origin;
-};
-
-/**
- * @override
- * @return {Array.<number>} Origin, the upper-left corner of the shape's coordinates.
  */
 ol.style.Shape.prototype.getOrigin = function() {
-  return this.origin_;
+  return [0, 0];
 };
 
 
 /**
- * Set the shape's size aka the lower-right corner of the shape's coordinates.
- *
- * @param {Array.<number>} size The size of the image.
+ * @inheritDoc
  * @api
  */
-ol.style.Shape.prototype.setSize = function(size) {
-  this.size_ = size;
-};
-
-
-/**
- * @override
- * @return {Array.<number>} Size, the lower-right corner of the shape's coordinates.
- */
 ol.style.Shape.prototype.getSize = function() {
-  return this.size_;
+
+  if (!this.image_) {
+    this.renderImage_();
+  }
+  return [this.image_.width, this.image_.height];
 };
 
 /**

@@ -4171,7 +4171,8 @@ olx.render;
 
 /**
  * @typedef {{size: (ol.Size|undefined),
- *     pixelRatio: (number|undefined)}}
+ *     pixelRatio: (number|undefined),
+ *     extent: (ol.Extent|undefined)}}
  */
 olx.render.ToContextOptions;
 
@@ -4193,6 +4194,15 @@ olx.render.ToContextOptions.prototype.size;
  * @api
  */
 olx.render.ToContextOptions.prototype.pixelRatio;
+
+
+/**
+ * The extent to pass to the immediate renderer. If not specified,
+ * the whole canvas size will be passed.
+ * @type {ol.Extent|undefined}
+ * @api
+ */
+olx.render.ToContextOptions.prototype.extent;
 
 
 /**
@@ -7350,6 +7360,231 @@ olx.style.TextOptions.prototype.fill;
  * @api
  */
 olx.style.TextOptions.prototype.stroke;
+
+
+/**
+ * @typedef {{canvasAnchor: (Array.<number>|undefined),
+ *     scale: (number|undefined),
+ *     snapToPixel: (boolean|undefined),
+ *     rotateWithView: (boolean|undefined),
+ *     rotation: (number|undefined)}}
+ */
+olx.style.ShapeOptions;
+
+
+/**
+ * The shape's anchor point in canvas coordinates.
+ * Default is `[0,0]`.
+ *
+ * @type {Array.<number>|undefined}
+ * @api
+ */
+olx.style.ShapeOptions.prototype.canvasAnchor;
+
+
+/**
+ * Scale of the shape style's geometry to pixels. Default is `1`.
+ * @type {number|undefined}
+ * @api
+ */
+olx.style.ShapeOptions.prototype.scale;
+
+
+/**
+ * If `true` integral numbers of pixels are used as the X and Y pixel
+ * coordinate when drawing the shape in the output canvas. If `false`
+ * fractional numbers may be used. Using `true` allows for "sharp"
+ * rendering (no blur), while using `false` allows for "accurate"
+ * rendering. Note that accuracy is important if the shape's
+ * position is animated. Without it, the shape may jitter noticeably.
+ * Default value is `true`.
+ * @type {boolean|undefined}
+ * @api
+ */
+olx.style.ShapeOptions.prototype.snapToPixel;
+
+
+/**
+ * Whether to rotate the shape style with the view. Default is `false`.
+ * @type {boolean|undefined}
+ * @api
+ */
+olx.style.ShapeOptions.prototype.rotateWithView;
+
+
+/**
+ * Rotation in radians (positive rotation clockwise). Default is `0`.
+ * @type {number|undefined}
+ * @api
+ */
+olx.style.ShapeOptions.prototype.rotation;
+
+
+/**
+ * @typedef {{geometry: (ol.geom.Geometry|undefined),
+ *     fill: (ol.style.Fill|undefined),
+ *     stroke: (ol.style.Stroke|undefined),
+ *     canvasAnchor: (Array.<number>|undefined),
+ *     scale: (number|undefined),
+ *     snapToPixel: (boolean|undefined),
+ *     rotateWithView: (boolean|undefined),
+ *     rotation: (number|undefined)}}
+ */
+olx.style.GeometryShapeOptions;
+
+
+/**
+ * The geometry of the shape style drawn given in coordinates relative to
+ * the anchor point of the geometry of the underlying {ol.style.Style} object.
+ *
+ * @type {ol.geom.Geometry|undefined}
+ * @api
+ */
+olx.style.GeometryShapeOptions.prototype.geometry;
+
+
+/**
+ * Fill style.
+ * @type {ol.style.Fill|undefined}
+ * @api
+ */
+olx.style.GeometryShapeOptions.prototype.fill;
+
+
+/**
+ * Stroke style.
+ * @type {ol.style.Stroke|undefined}
+ * @api
+ */
+olx.style.GeometryShapeOptions.prototype.stroke;
+
+
+/**
+ * The shape's anchor point in canvas coordinates.
+ * Default is `[0,0]`.
+ *
+ * @type {Array.<number>|undefined}
+ * @api
+ */
+olx.style.GeometryShapeOptions.prototype.canvasAnchor;
+
+
+/**
+ * Scale of the shape style's geometry to pixels. Default is `1`.
+ * @type {number|undefined}
+ * @api
+ */
+olx.style.GeometryShapeOptions.prototype.scale;
+
+
+/**
+ * If `true` integral numbers of pixels are used as the X and Y pixel
+ * coordinate when drawing the shape in the output canvas. If `false`
+ * fractional numbers may be used. Using `true` allows for "sharp"
+ * rendering (no blur), while using `false` allows for "accurate"
+ * rendering. Note that accuracy is important if the shape's
+ * position is animated. Without it, the shape may jitter noticeably.
+ * Default value is `true`.
+ * @type {boolean|undefined}
+ * @api
+ */
+olx.style.GeometryShapeOptions.prototype.snapToPixel;
+
+
+/**
+ * Whether to rotate the shape style with the view. Default is `false`.
+ * @type {boolean|undefined}
+ * @api
+ */
+olx.style.GeometryShapeOptions.prototype.rotateWithView;
+
+
+/**
+ * Rotation in radians (positive rotation clockwise). Default is `0`.
+ * @type {number|undefined}
+ * @api
+ */
+olx.style.GeometryShapeOptions.prototype.rotation;
+
+
+/**
+ * @typedef {{renderFunction: (function(CanvasRenderingContext2D, ol.Extent)),
+ *     extent: (ol.Extent|undefined),
+ *     canvasAnchor: (Array.<number>|undefined),
+ *     scale: (number|undefined),
+ *     snapToPixel: (boolean|undefined),
+ *     rotateWithView: (boolean|undefined),
+ *     rotation: (number|undefined)}}
+ */
+olx.style.CanvasShapeOptions;
+
+
+/**
+ * The function rending the shape's content to a canvas with
+ * the coordinate system set up for the configured extent.
+ *
+ * @type {function(CanvasRenderingContext2D, ol.Extent)}
+ * @api
+ */
+olx.style.CanvasShapeOptions.prototype.renderFunction;
+
+
+/**
+ * The extent of the xhape's coordinates in canvas coordinates.
+ * If not specified, the default value is `[-10,-10,10,10]`.
+ *
+ * @type {ol.Extent|undefined}
+ * @api
+ */
+olx.style.CanvasShapeOptions.prototype.extent;
+
+
+/**
+ * The shape's anchor point in canvas coordinates.
+ * Default is `[0,0]`.
+ *
+ * @type {Array.<number>|undefined}
+ * @api
+ */
+olx.style.CanvasShapeOptions.prototype.canvasAnchor;
+
+
+/**
+ * Scale of the shape style's geometry to pixels. Default is `1`.
+ * @type {number|undefined}
+ * @api
+ */
+olx.style.CanvasShapeOptions.prototype.scale;
+
+
+/**
+ * If `true` integral numbers of pixels are used as the X and Y pixel
+ * coordinate when drawing the shape in the output canvas. If `false`
+ * fractional numbers may be used. Using `true` allows for "sharp"
+ * rendering (no blur), while using `false` allows for "accurate"
+ * rendering. Note that accuracy is important if the shape's
+ * position is animated. Without it, the shape may jitter noticeably.
+ * Default value is `true`.
+ * @type {boolean|undefined}
+ * @api
+ */
+olx.style.CanvasShapeOptions.prototype.snapToPixel;
+
+
+/**
+ * Whether to rotate the shape style with the view. Default is `false`.
+ * @type {boolean|undefined}
+ * @api
+ */
+olx.style.CanvasShapeOptions.prototype.rotateWithView;
+
+
+/**
+ * Rotation in radians (positive rotation clockwise). Default is `0`.
+ * @type {number|undefined}
+ * @api
+ */
+olx.style.CanvasShapeOptions.prototype.rotation;
 
 
 /**
